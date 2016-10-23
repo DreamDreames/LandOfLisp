@@ -1,6 +1,3 @@
-(defparameter *small* 1)
-(defparameter *big* 100)
-
 (defun guess-my-number ()
   ; arithmetic shift
   (ash (+ *small* *big*) -1))
@@ -14,4 +11,8 @@
   (setf *small* (1+ (guess-my-number)))
   (guess-my-number))
 
+(defun start-over()
+  (defparameter *small* 1)
+  (defparameter *big* 100)
+  (guess-my-number))
 
