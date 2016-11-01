@@ -31,4 +31,21 @@
   ; mapcar takes another function and a list, and then applies this function to every member of a list
   ; the #' symbol is a shorthand for the function operator
   ; (mapcar #'car '((foo bar) (baz qux))) will be converted to (mapcar (function car) '((foo bar) (baz qux)))
+  ; appy pretends that the items int he list are separate objects and passes them to the given function as such
   (apply #'append (mapcar #'describe-path (cdr (assoc location edges)))))
+
+(defparameter *objects* '(whiskey bucket frog chain))
+
+(defparameter *object-locations* '((whiskey living-room)
+                                   (bucket living-room)
+                                   (chain garden)
+                                   (frog garden)))
+
+; (objects-at 'living-room *objects* *object-locations*)
+; (WHISKEY BUCKET)
+(defun objects-at (loc objs obj-locs)
+  ; use labels function to define functions locally
+  (labels ((at-loc-p (obj) 
+                     (eq (cadr (assoc obj obj-locs)) loc)))
+    (remove-if-not #'at-loc-p objs)))
+
