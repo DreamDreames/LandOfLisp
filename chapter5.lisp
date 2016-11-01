@@ -42,10 +42,23 @@
                                    (frog garden)))
 
 ; (objects-at 'living-room *objects* *object-locations*)
-; (WHISKEY BUCKET)
+; (whiskey bucket)
 (defun objects-at (loc objs obj-locs)
   ; use labels function to define functions locally
   (labels ((at-loc-p (obj) 
                      (eq (cadr (assoc obj obj-locs)) loc)))
     (remove-if-not #'at-loc-p objs)))
 
+; (describe-objects 'living-room *objects* *object-locations*)
+; (You see a whiskey on the floor. You see a bucket on the floor)
+(defun describe-objects (loc objs obj-loc)
+  (labels ((describe-obj (obj)
+                         `(you see a ,obj on the floor.)))
+    (apply #'append (mapcar #'describe-obj (objects-at loc objs obj-loc)))))
+
+(defparameter *location* 'living-room)
+
+(defun look ()
+  (append (describe-location *location* *nodes*)
+          (describe-paths *location* *edges*)
+          (describe-objects *location* *objects* *object-locations*)))
