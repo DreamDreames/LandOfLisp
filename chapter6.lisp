@@ -102,6 +102,55 @@
 (defun game-read ()
   (let ((cmd (read-from-string
                (concatenate 'string "(" (read-line) ")"))))
+    ; Local functions can be defined with labels or flet
+    ; Since we are not using any recursion in the quote-it function
+    ; we can use the simplier flet command
     (flet ((quote-it (x)
+                     ; Single quote is just short-hand for a Lisp command called quote
+                     ; This means that 'foo and (quote foo) are the same
+                     ; We can quote a raw parameter by simply putting the paramter in a list 
+                     ; with the quote command in front
                      (list 'quote x)))
       (cons (car cmd) (mapcar #'quote-it (cdr cmd))))))
+
+; One attach method that will break our program is to use reader marcos
+; e.g. walk #.{format-harddrive}
+; The bottom line is that you can never be sure that a Lisp program using eval or read is completely safe
+; When writing production Lisp code, you should try to avoid these two commands when possible.
+(defparameter *allowed-commands* '(look walk pickup inventory))
+
+(defun game-eval (sexp)
+  (if (member (car sexp) *allowed-commands*)
+    (eval sexp)
+    '(i do not konw that command)))
+
+(defun tweak-text (lst caps lit)
+  (when lst
+    (let ((item (car lst))
+          (rest (cdr lst)))
+      (cond ((eql item #\space) (cons item (tweak-text rest caps lit)))
+            ; Turn on the cap parameter for the rest of the string
+            ((member item '(#\! #\? #\.)) (cons item (tweak-text rest t lit)))
+            ; We've encountered a quotation mark
+            ; As long as the lit value is set, the tweak-text function prevents the capitalization rules
+            ; from being reached
+            ((eql item #\") (tweak-text rest caps (not lit)))
+            (lit (cons item (tweak-text rest nil list)))
+            (caps (cons (char-upcase item) (tweak-text rest nil lit)))
+            (t (cons (char-downcase item) (tweak-text rest nil nil)))))))
+
+; (game-print '(not only does this sentence have a "comma," it also mentions the "iPad."))
+; Not only does this sentence have a comma, it also mentions the iPad.
+(defun game-print (lst)
+  ; coerce function converts the string to a list of characters
+  (princ (coerce (tweak-text (coerce (string-trim "() "
+                                                  ; prin1-to-string converts the symbol list into a sting
+                                                  ; The to-string part means this function doesn't dump the result
+                                                  ; to the screen, but just returns it as a string
+                                                  ; The 1 means that it will stay on a single line.
+                                                  (prin1-to-string lst))
+                                     'list)
+                             t
+                             nil)
+                 'string))
+  (fresh-line))
