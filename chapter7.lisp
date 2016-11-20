@@ -137,6 +137,13 @@
 (graph->png "wizard.dot" *wizard-nodes* *wizard-edges*)
 
 (defun uedges->dot (edges)
+  ; maplist is like the mapcar function
+  ; except that the function indside it receives the entire remainder of the list
+  ; not just the current item in the list:
+  ; (maplist #'print '(a b c))
+  ; (A B C)
+  ; (B C)
+  ; (C)
   (maplist (lambda (lst)
              (mapc (lambda (edge)
                      (unless (assoc (car edge) (cdr lst))
