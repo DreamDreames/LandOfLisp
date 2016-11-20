@@ -78,4 +78,59 @@
           (princ "\"];"))
         nodes))
 
-(nodes->dot *wizard-nodes*)
+;(nodes->dot *wizard-nodes*)
+
+(defun edges->dot (edges)
+  (mapc (lambda (node)
+          (mapc (lambda (edge)
+                  (fresh-line)
+                  (princ (dot-name (car node)))
+                  (princ "->")
+                  (princ (dot-name (car edge)))
+                  (princ "[label=\"")
+                  (princ (dot-label (cdr edge)))
+                  (princ "\"];"))
+                (cdr node)))
+        edges))
+
+;(edges->dot *wizard-edges*)
+
+(defun graph->dot (nodes edges)
+  (princ "digraph{")
+  (nodes->dot nodes)
+  (edges->dot edges)
+  (princ "}"))
+
+; generate the DOT information used by graphviz to create a graph
+; (graph->dot *wizard-nodes*  *wizard-edges*)
+
+; Turning the DOT File into a Picture
+; Lispers will open create such functions in order to describe a computation that they don't want to run until later
+; In this scenario, a function without arguments is commonly called a thunk or a suspension.
+; In this case, the thunk our dot->png function needs would be a function that, 
+; when called, prints a DOT file to the console
+(defun dot->png (fname thunk)
+  ; The first item passed into with-open-file becomes the name of a special Common Lisp datatype called a stream
+  ; which is created for us by with-open-file
+  ; By declaring the name of the stream to be *standard-output* 
+  ; a special global variable in Common Lisp that controls the default location to which printing functions send their output
+  ; As a result, any printing done inside the thunk will be redirected to our DOT file
+  (with-open-file (*standard-output*
+                    fname
+                    ; keyword parameters
+                    ; A colon prepended symbol in Common Lisp always means itself
+                    ; :cigar
+                    ; :CIGAR
+                    :direction :output
+                    :if-exists :supersede)
+    (funcall thunk))
+  (ext:shell (concatenate 'string "dot -Tpng -O " fname)))
+
+(defun graph->png (fname nodes edges)
+  (dot->png fname
+           ; Use a lambda to create a thunk
+           (lambda ()
+             ; The graph->dot function is called inside the thunk, as a delayed computation
+             (graph->dot nodes edges))))
+
+(graph->png "wizard.dot" *wizard-nodes* *wizard-edges*)
