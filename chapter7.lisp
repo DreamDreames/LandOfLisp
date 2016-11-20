@@ -133,4 +133,34 @@
              ; The graph->dot function is called inside the thunk, as a delayed computation
              (graph->dot nodes edges))))
 
+; Creat a Picture of our Graph
 (graph->png "wizard.dot" *wizard-nodes* *wizard-edges*)
+
+(defun uedges->dot (edges)
+  (maplist (lambda (lst)
+             (mapc (lambda (edge)
+                     (unless (assoc (car edge) (cdr lst))
+                       (fresh-line)
+                       (princ (dot-name (caar lst)))
+                       (princ "--")
+                       (princ (dot-name (car edge)))
+                       (princ "[label=\"")
+                       (princ (dot-label (cdr edge)))
+                       (princ "\"];")))
+                   (cdar lst)))
+           edges))
+
+(defun ugraph->dot (nodes edges)
+  (princ "graph{")
+  (nodes->dot nodes)
+  (uedges->dot edges)
+  (princ "}"))
+
+(defun ugraph->png (fname nodes edges)
+  (dot->png fname
+            (lambda ()
+              (ugraph->dot nodes edges))))
+
+(ugraph->png "uwizard.dot" *wizard-nodes* *wizard-edges*)
+
+
