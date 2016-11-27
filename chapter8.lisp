@@ -33,7 +33,7 @@
 
 ; (1 2 3 4 5 6 7 8 9 10)
 
-(defun direct-edge (node edge-list)
+(defun direct-edges (node edge-list)
   (remove-if-not (lambda (x)
                    (eql (car x) node))
                  edge-list))
@@ -45,20 +45,20 @@
                          (push node visited)
                          (mapc (lambda (edge)
                                  (traverse (cdr edge)))
-                               (direct-edge node edge-list)))))
+                               (direct-edges node edge-list)))))
       (traverse node))
     visited))
 
-(defun find-island (nodes edge-list)
-  (let ((island nil))
-    (labels ((find-island (nodes)
+(defun find-islands (nodes edge-list)
+  (let ((islands nil))
+    (labels ((find-islands (nodes)
                           (let* ((connected (get-connected (car nodes) edge-list))
                                  (unconnected (set-difference nodes connected)))
                             (push connected islands)
                             (when unconnected 
-                              (find-island unconnected)))))
-      (find-island nodes))
-    island))
+                              (find-islands unconnected)))))
+      (find-islands nodes))
+    islands))
 
 (defun connect-with-bridges (islands)
   (when (cdr islands)
@@ -71,12 +71,15 @@
 (defun make-city-edges ()
   (let* ((nodes (loop for i from 1 to *node-num*
                       collect i))
+         ; with let* we can reference nodes defined previously 
          (edge-list (connect-all-islands nodes (make-edge-list)))
          (cops (remove-if-not (lambda (x)
                                 (zerop (random *cop-odds*)))
                               edge-list)))
     (add-cops (edges-to-alist edge-list) cops)))
 
+; generates a alist looks like
+; '((1 (2)) (2 (1) (3)) (3 (2)))
 (defun edges-to-alist (edge-list)
   (mapcar (lambda (node1)
             (cons node1
@@ -86,7 +89,9 @@
                                              :test #'equal))))
           (remove-duplicates (mapcar #'car edge-list))))
 
-(defun add-cops (edge-alist edge-with-cops)
+; generates a alist looks like
+; ((1 (2)) (2 (1) (3 COPS)) ( 3 (2 COPS)))
+(defun add-cops (edge-alist edges-with-cops)
   (mapcar (lambda (x)
             (let ((node1 (car x))
                   (node1-edges (cdr x)))
@@ -104,13 +109,16 @@
 (defun neighbors (node edge-alist)
   (mapcar #'car (cdr (assoc node edge-alist))))
 
+; check if two nodes are one node paart in the city graph
 (defun within-one (a b edge-alist)
   (member b (neighbors a edge-alist)))
 
 (defun within-two (a b edge-alist)
   (or (within-one a b edge-alist)
+      ; then check if any of these new nodes are within one
       (some (lambda (x)
               (within-one x b edge-alist))
+            ; fist extract all the nodes that are one away
             (neighbors a edge-alist))))
 
 (defun make-city-nodes (edge-alist)
@@ -129,3 +137,19 @@
                                  '(lights!)))
                           (when (some #'cdr (cdr (assoc n edge-alist)))
                             '(sirens!))))))
+
+(defun new-game ()
+  (setf *congestion-city-edges* (make-city-edges))
+  (setf *congestion-city-nodes* (make-city-nodes *congestion-city-edges*))
+  (setf *player-pos* (find-empty-node))
+  (setf *visited-nodes* (list *player-pos*))
+  (draw-city))
+
+(defun find-empty-node()
+  (let ((x (random-node)))
+    (if (cdr (assoc x *congestion-city-nodes*))
+      (find-empty-node)
+      x)))
+
+(defun draw-city()
+  (ugraph->png "city" *congestion-city-nodes* *congestion-city-edges*))
